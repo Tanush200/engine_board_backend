@@ -1,7 +1,7 @@
 const Task = require('../models/Task')
 
 exports.createTask = async (req, res) => {
-    const { title, description, course, type, status, priority, deadline } = req.body;
+    const { title, description, course, type, status, priority, deadline, githubRepo } = req.body;
 
     try {
         const task = new Task({
@@ -12,7 +12,8 @@ exports.createTask = async (req, res) => {
             type: type || 'Assignment',
             status: status || 'Todo',
             priority: priority || 'Medium',
-            deadline: deadline || null
+            deadline: deadline || null,
+            githubRepo: githubRepo || ''
         });
 
         await task.save();
