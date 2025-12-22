@@ -15,16 +15,16 @@ const app = express();
 connectDB()
 
 app.use(express.json());
-// app.use(
-//   cors({
-//     origin:
-//       process.env.NODE_ENV === "production"
-//         ? ["https://www.nexus-one.in", "https://lms-frontend-omega-nine.vercel.app"]
-//         : ["http://localhost:3000"],
-//     credentials: true,
-//   })
-// );
-app.use(cors())
+app.use(
+    cors({
+        origin:
+            process.env.NODE_ENV === "production"
+                ? ["https://engine-board-frontend.vercel.app/"]
+                : ["http://localhost:3000"],
+        credentials: true,
+    })
+);
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes)
