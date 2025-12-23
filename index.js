@@ -12,6 +12,8 @@ const eventRoutes = require('./routes/events')
 const githubRoutes = require('./routes/github')
 const studyPlanRoutes = require('./routes/studyPlans')
 const aiChatRoutes = require('./routes/aiChat')
+const streakRoutes = require('./routes/streaks')
+const projectRoutes = require('./routes/projects')
 
 const app = express();
 
@@ -36,6 +38,8 @@ app.use('/api/events', eventRoutes)
 app.use('/api/github', githubRoutes)
 app.use('/api/study-plans', studyPlanRoutes)
 app.use('/api/ai-chat', aiChatRoutes)
+app.use('/api/streaks', streakRoutes)
+app.use('/api/projects', projectRoutes)
 
 
 const PORT = process.env.PORT || 5000;

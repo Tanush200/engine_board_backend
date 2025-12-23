@@ -179,4 +179,4 @@ studyPlanSchema.statics.getActivePlan = function (userId, courseId) {
     }).populate('course').populate('schedule.topics.resources');
 };
 
-module.exports = mongoose.model('StudyPlan', studyPlanSchema);
+module.exports = mongoose.models.StudyPlan || mongoose.model('StudyPlan', studyPlanSchema);

@@ -10,6 +10,7 @@ const taskSchema = new mongoose.Schema({
     priority: { type: String, default: 'Medium' },
     githubRepo: { type: String, default: '' }, // Format: "owner/repo"
     deadline: { type: Date, default: null },
+    completedAt: { type: Date, default: null }, // Track exact completion time for streaks
     // AI Study Buddy fields
     estimatedTime: { type: Number, default: 120 }, // minutes, default 2 hours
     actualTime: { type: Number }, // minutes, tracked for learning

@@ -37,23 +37,47 @@ const callPerplexity = async (messages, model = 'sonar-pro') => {
 /**
  * Build user context for AI
  */
+const User = require('../models/User');
+
+/**
+ * Build user context for AI
+ */
 const buildUserContext = async (userId) => {
     try {
+        // Get user details
+        const user = await User.findById(userId).lean();
+
         // Get user's tasks
-        const tasks = await Task.find({ user: userId }).populate('course').lean();
+        const tasks = await Task.find({
+            user: userId,
+            status: { $ne: 'Done' } // Get all non-completed tasks
+        }).populate('course').lean();
+
+        console.log(`📊 Found ${tasks.length} pending tasks for user ${userId}`);
 
         // Get user's courses
         const courses = await Course.find({ user: userId }).lean();
 
-        // Filter upcoming tasks (due within 14 days)
+        // Filter upcoming tasks (due within 14 days OR overdue OR no deadline)
         const now = new Date();
         const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
         const upcomingTasks = tasks.filter(task => {
-            if (!task.deadline) return false;
+            // Always include tasks without deadline
+            if (!task.deadline) return true;
+
             const deadline = new Date(task.deadline);
-            return deadline >= now && deadline <= twoWeeksLater;
-        }).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+            // Include if deadline is in the past (overdue) or within next 2 weeks
+            return deadline <= twoWeeksLater;
+        }).sort((a, b) => {
+            // Sort: Overdue first, then upcoming, then no deadline
+            if (!a.deadline && !b.deadline) return 0;
+            if (!a.deadline) return 1;
+            if (!b.deadline) return -1;
+            return new Date(a.deadline) - new Date(b.deadline);
+        });
+
+        console.log(`✅ Included ${upcomingTasks.length} tasks in context`);
 
         // Calculate completed tasks today
         const todayStart = new Date();
@@ -79,19 +103,29 @@ const buildUserContext = async (userId) => {
         }
 
         return {
-            upcomingTasks: upcomingTasks.map(t => ({
-                title: t.title,
-                course: t.course?.name || 'General',
-                deadline: t.deadline,
-                priority: t.priority,
-                status: t.status,
-                estimatedTime: t.estimatedTime || 120, // default 2 hours
-                description: t.description
-            })),
+            upcomingTasks: upcomingTasks.map(t => {
+                const deadline = t.deadline ? new Date(t.deadline) : null;
+                const isOverdue = deadline && deadline < now;
+                const daysUntil = deadline ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null;
+
+                return {
+                    title: t.title,
+                    course: t.course?.name || 'General',
+                    deadline: t.deadline,
+                    daysUntil: daysUntil,
+                    isOverdue: isOverdue,
+                    priority: t.priority,
+                    status: t.status,
+                    estimatedTime: t.estimatedTime || 120,
+                    description: t.description
+                };
+            }),
             completedToday: completedToday.map(t => t.title),
             courses: courses.map(c => c.name),
             averageCompletionTimes: avgTimes,
-            currentDate: now.toISOString().split('T')[0]
+            averageCompletionTimes: avgTimes,
+            currentDate: now.toISOString().split('T')[0],
+            userName: user ? user.name : 'Student'
         };
     } catch (error) {
         console.error('Error building user context:', error);
@@ -111,27 +145,31 @@ const buildUserContext = async (userId) => {
 const chatWithContext = async (userMessage, userId, conversationHistory = []) => {
     const context = await buildUserContext(userId);
 
-    const systemPrompt = `You are an AI Study Buddy for a student. You help them manage their workload, create daily plans, and stay on track with deadlines.
+    const systemPrompt = `You are an AI Study Buddy for a student named ${context.userName || 'Student'}. Your goal is to help them manage their ACADEMIC workload.
 
-Your personality:
-- Friendly and encouraging
-- Honest about feasibility
-- Proactive with suggestions
-- Use emojis occasionally 😊
+STRICT RULES:
+1. Focus ONLY on the student's tasks, courses, and exams provided in the context.
+2. Do NOT suggest random events, holidays, or non-academic activities.
+3. Do NOT use citations (e.g., [1], [2]).
+4. Format your responses using Markdown with emojis:
+   - Use **bold** for emphasis
+   - Use lists for tasks
+   - Use > blockquotes for tips
+5. Be concise and actionable.
 
-Current student context:
-- Upcoming tasks: ${JSON.stringify(context.upcomingTasks, null, 2)}
-- Completed today: ${context.completedToday.join(', ') || 'None yet'}
-- Enrolled courses: ${context.courses.join(', ')}
-- Average task completion times: ${JSON.stringify(context.averageCompletionTimes)}
-- Current date: ${context.currentDate}
+Current Context:
+- Date: ${context.currentDate}
+- Urgent Tasks (Next 7 days): ${JSON.stringify(context.upcomingTasks.slice(0, 5))}
+- All Upcoming Tasks: ${JSON.stringify(context.upcomingTasks)}
+- Completed Today: ${context.completedToday.join(', ') || 'None'}
+- Courses: ${context.courses.join(', ')}
 
-Instructions:
-- Use the student's actual task data in your responses
-- Be specific with task names and deadlines
-- Provide realistic time estimates
-- Suggest priorities based on urgency
-- Keep responses concise but helpful`;
+If asked "What should I do today?", analyze their urgent tasks and create a prioritized list in this format:
+### 📅 Plan for Today
+1. **[Task Name]** (Time) - [Why it's important]
+2. ...
+
+> **💡 Tip:** [Relevant study tip]`;
 
     const messages = [
         { role: 'system', content: systemPrompt },

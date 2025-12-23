@@ -6,7 +6,7 @@ const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 /**
  * Helper function to make Perplexity API calls
  */
-const callPerplexity = async (messages, model = 'llama-3.1-sonar-small-128k-online') => {
+const callPerplexity = async (messages, model = 'sonar') => {
     try {
         const response = await axios.post(
             PERPLEXITY_API_URL,
@@ -109,6 +109,7 @@ Create a day-by-day plan that:
 2. Includes review sessions using spaced repetition
 3. Allocates more time to difficult topics
 4. Leaves the last day for final revision
+5. MUST include ALL syllabus topics listed above. Do not skip any topics.
 
 Return JSON in this format:
 {
@@ -136,7 +137,7 @@ Return ONLY the JSON object.`
     ];
 
     try {
-        const response = await callPerplexity(messages, 'llama-3.1-sonar-large-128k-online');
+        const response = await callPerplexity(messages, 'sonar-pro');
         const cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         return JSON.parse(cleanResponse);
     } catch (error) {

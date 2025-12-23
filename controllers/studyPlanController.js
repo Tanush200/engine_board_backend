@@ -1,6 +1,7 @@
 const StudyPlan = require('../models/StudyPlan');
 const ConfidenceTracking = require('../models/ConfidenceTracking');
 const Course = require('../models/Course');
+const Resource = require('../models/Resource');
 const perplexityService = require('../services/perplexityService');
 
 /**
