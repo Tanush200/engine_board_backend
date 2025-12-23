@@ -25,6 +25,42 @@ const resourceSchema = new mongoose.Schema({
     thumbnail: {
         type: String, // URL to channel logo or thumbnail
         default: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png'
+    },
+    // Enhanced fields for study plans
+    difficulty: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced'],
+        default: 'intermediate'
+    },
+    estimatedTime: {
+        type: Number, // in minutes
+        default: 30
+    },
+    resourceType: {
+        type: String,
+        enum: ['video', 'pdf', 'article', 'practice', 'other'],
+        default: 'video'
+    },
+    syllabusTopics: [{
+        type: String // Tags to match with course syllabus
+    }],
+    examFocused: {
+        type: Boolean,
+        default: false
+    },
+    quickRevision: {
+        type: Boolean,
+        default: false
+    },
+    rating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5
+    },
+    usageCount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

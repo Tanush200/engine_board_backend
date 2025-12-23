@@ -10,6 +10,12 @@ const taskSchema = new mongoose.Schema({
     priority: { type: String, default: 'Medium' },
     githubRepo: { type: String, default: '' }, // Format: "owner/repo"
     deadline: { type: Date, default: null },
+    // AI Study Buddy fields
+    estimatedTime: { type: Number, default: 120 }, // minutes, default 2 hours
+    actualTime: { type: Number }, // minutes, tracked for learning
+    aiGenerated: { type: Boolean, default: false }, // Created by AI breakdown
+    parentTask: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', default: null },
+    subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     createdAt: { type: Date, default: Date.now() }
 });
 

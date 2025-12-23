@@ -1,15 +1,18 @@
 const express = require("express");
+const dotenv = require("dotenv");
+dotenv.config(); // Load env vars immediately
+
 const connectDB = require("./config/db");
 const cors = require("cors");
-const dotenv = require("dotenv");
 
 const authRoutes = require('./routes/auth')
 const taskRoutes = require('./routes/tasks')
 const courseRoutes = require('./routes/courses')
 const eventRoutes = require('./routes/events')
 const githubRoutes = require('./routes/github')
+const studyPlanRoutes = require('./routes/studyPlans')
+const aiChatRoutes = require('./routes/aiChat')
 
-dotenv.config();
 const app = express();
 
 connectDB()
@@ -31,6 +34,8 @@ app.use('/api/tasks', taskRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/events', eventRoutes)
 app.use('/api/github', githubRoutes)
+app.use('/api/study-plans', studyPlanRoutes)
+app.use('/api/ai-chat', aiChatRoutes)
 
 
 const PORT = process.env.PORT || 5000;
