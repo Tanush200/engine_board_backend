@@ -21,4 +21,7 @@ router.get('/workload-analysis', auth, aiChatController.analyzeWorkload);
 // Clear chat history
 router.delete('/history', auth, aiChatController.clearChatHistory);
 
+// Generate roadmap
+router.post('/roadmap', auth, aiChatController.generateRoadmap);
+
 module.exports = router;

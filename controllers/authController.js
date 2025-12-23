@@ -42,7 +42,7 @@ exports.login = async (req, res) => {
         const payload = { user: { id: user.id } };
 
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-            res.status(200).json({ token, user: { id: user.id, name: user.name, githubAccessToken: user.githubAccessToken } })
+            res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email, githubAccessToken: user.githubAccessToken } })
         })
 
     } catch (error) {
@@ -50,6 +50,16 @@ exports.login = async (req, res) => {
         res.status(500).send('Server Error')
     }
 }
+
+exports.getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
 
 exports.updateProfile = async (req, res) => {
     try {

@@ -33,6 +33,16 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: Date.now()
     },
+    roadmapGeneration: {
+        count: {
+            type: Number,
+            default: 0
+        },
+        lastGeneratedDate: {
+            type: Date,
+            default: null
+        }
+    }
 })
 
 module.exports = mongoose.model('User', UserSchema);

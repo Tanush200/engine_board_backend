@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const resourceController = require('../controllers/resourceController');
 const auth = require('../middleware/auth');
+const resourceController = require('../controllers/resourceController');
 
-router.get('/', auth, resourceController.getResources);
-router.post('/seed', auth, resourceController.seedResources);
+// @route   GET api/resources/search
+// @desc    Search for educational videos
+// @access  Private
+router.get('/search', auth, resourceController.searchResources);
 
 module.exports = router;

@@ -2,8 +2,13 @@ const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config(); // Load env vars immediately
 
+
 const connectDB = require("./config/db");
 const cors = require("cors");
+const helmet = require("helmet");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
+const errorHandler = require("./middleware/error");
 
 const authRoutes = require('./routes/auth')
 const taskRoutes = require('./routes/tasks')
@@ -14,10 +19,28 @@ const studyPlanRoutes = require('./routes/studyPlans')
 const aiChatRoutes = require('./routes/aiChat')
 const streakRoutes = require('./routes/streaks')
 const projectRoutes = require('./routes/projects')
+const noteRoutes = require('./routes/notes')
+const resourceRoutes = require('./routes/resources')
 
 const app = express();
 
 connectDB()
+
+// Security Middleware
+app.use(helmet());
+
+// Logging Middleware
+if (process.env.NODE_ENV === 'development') {
+    app.use(morgan('dev'));
+}
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again after 15 minutes'
+});
+app.use(limiter);
 
 app.use(express.json());
 app.use(
@@ -40,6 +63,11 @@ app.use('/api/study-plans', studyPlanRoutes)
 app.use('/api/ai-chat', aiChatRoutes)
 app.use('/api/streaks', streakRoutes)
 app.use('/api/projects', projectRoutes)
+app.use('/api/notes', noteRoutes)
+app.use('/api/resources', resourceRoutes)
+
+// Error Handler (must be last)
+app.use(errorHandler);
 
 
 const PORT = process.env.PORT || 5000;

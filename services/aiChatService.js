@@ -342,11 +342,63 @@ Provide a clear, honest answer:
     return response;
 };
 
+/**
+ * Generate learning roadmap
+ */
+const generateRoadmap = async (topic) => {
+    const prompt = `Create a comprehensive, step-by-step learning roadmap for: "${topic}"
+
+    Structure the roadmap into 3 distinct phases:
+    1. Beginner (Foundations)
+    2. Intermediate (Core Skills)
+    3. Advanced (Mastery)
+
+    For EACH phase, provide:
+    - **Key Concepts**: List of topics to learn.
+    - **Resources**: 1-2 types of resources (e.g., "Official Docs", "Interactive Tutorials").
+    - **Project Idea**: A specific project to build to practice these skills.
+
+    **IMPORTANT: Visual Roadmap**
+    At the very beginning, provide a Mermaid.js flowchart representing the learning path.
+    
+    **CRITICAL MERMAID RULES:**
+    1. Use simple node IDs without spaces (e.g., A, B, C, Node1).
+    2. Put text labels in brackets/parentheses/braces.
+    3. Do NOT use special characters in node IDs.
+    4. Example:
+    \`\`\`mermaid
+    graph TD
+        A[Start] --> B(Beginner Phase)
+        B --> C{Key Concepts}
+        C --> D[Concept 1]
+        C --> E[Concept 2]
+        ...
+    \`\`\`
+
+    **Formatting Rules:**
+    - Use \`###\` for Phase headers (e.g., "### 🟢 Beginner Phase: Foundations").
+    - Use \`####\` for sub-sections like "Key Concepts", "Resources".
+    - Use bullet points for lists.
+    - Use blockquotes (\`>\`) for the "Project Idea" to make it stand out.
+    - Ensure the output is clean, structured Markdown.
+
+    End with a "Final Capstone Project" idea that combines everything.`;
+
+
+
+    const response = await callPerplexity([
+        { role: 'user', content: prompt }
+    ], 'sonar-pro');
+
+    return response;
+};
+
 module.exports = {
     chatWithContext,
     analyzeDailyWorkload,
     generateDailyPlan,
     breakdownVagueTask,
     answerWorkloadQuestion,
-    buildUserContext
+    buildUserContext,
+    generateRoadmap
 };

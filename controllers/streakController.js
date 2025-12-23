@@ -48,6 +48,25 @@ exports.getStreakData = async (req, res) => {
             }
         }
 
+        // Generate last 118 days history for global grid (approx 4 months to fill the grid nicely)
+        // We want to start from a Sunday to align the grid properly if we use CSS grid auto-flow column
+        // But for simplicity, let's just get the last 120 days
+        const globalHistory = [];
+        const todayDate = new Date();
+        // Adjust to end on today
+
+        for (let i = 118; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = normalizeDate(d);
+            const tasksForDay = tasksByDate[dateStr] || [];
+            globalHistory.push({
+                date: dateStr,
+                count: tasksForDay.length,
+                completed: tasksForDay.length > 0
+            });
+        }
+
         // Calculate Course Streaks
         const courseStreaks = {};
 
@@ -109,7 +128,8 @@ exports.getStreakData = async (req, res) => {
         res.json({
             global: {
                 streak: currentStreak,
-                isActive
+                isActive,
+                history: globalHistory
             },
             courses: courseStreaks
         });

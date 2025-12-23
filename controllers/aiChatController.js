@@ -1,5 +1,6 @@
 const ChatMessage = require('../models/ChatMessage');
 const Task = require('../models/Task');
+const User = require('../models/User');
 const aiChatService = require('../services/aiChatService');
 
 /**
@@ -221,5 +222,58 @@ exports.clearChatHistory = async (req, res) => {
     } catch (error) {
         console.error('Error clearing chat history:', error);
         res.status(500).json({ message: 'Failed to clear chat history', error: error.message });
+    }
+};
+
+/**
+ * Generate roadmap
+ * POST /api/ai-chat/roadmap
+ */
+exports.generateRoadmap = async (req, res) => {
+    try {
+        const { topic } = req.body;
+
+        if (!topic) {
+            return res.status(400).json({ message: 'Topic is required' });
+        }
+
+        const userId = req.user.id;
+        const user = await User.findById(userId);
+
+        // Check daily limit
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const lastGenerated = user.roadmapGeneration?.lastGeneratedDate ? new Date(user.roadmapGeneration.lastGeneratedDate) : null;
+        if (lastGenerated) {
+            lastGenerated.setHours(0, 0, 0, 0);
+        }
+
+        // Reset count if new day
+        if (!lastGenerated || lastGenerated < today) {
+            user.roadmapGeneration = {
+                count: 0,
+                lastGeneratedDate: null
+            };
+        }
+
+        if (user.roadmapGeneration.count >= 3) {
+            return res.status(429).json({
+                message: 'Daily roadmap limit reached (3/3). Please try again tomorrow.'
+            });
+        }
+
+        const roadmap = await aiChatService.generateRoadmap(topic);
+
+        // Update usage
+        user.roadmapGeneration.count += 1;
+        user.roadmapGeneration.lastGeneratedDate = new Date();
+        await user.save();
+
+        res.json({ roadmap, remaining: 3 - user.roadmapGeneration.count });
+
+    } catch (error) {
+        console.error('Error generating roadmap:', error);
+        res.status(500).json({ message: 'Failed to generate roadmap', error: error.message });
     }
 };
