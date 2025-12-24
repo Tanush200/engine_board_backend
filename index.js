@@ -48,7 +48,14 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.use(express.json());
+// Use JSON parser for all routes EXCEPT webhook (which needs raw body)
+app.use((req, res, next) => {
+    if (req.originalUrl === '/api/payment/webhook') {
+        next();
+    } else {
+        express.json()(req, res, next);
+    }
+});
 app.use(
     cors({
         origin:

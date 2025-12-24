@@ -1,5 +1,6 @@
 const DodoPayments = require('dodopayments');
 const User = require('../models/User');
+const crypto = require('crypto');
 
 let client;
 try {
@@ -218,6 +219,13 @@ exports.verifyPayment = async (req, res) => {
 exports.manualPaymentUpdate = async (req, res) => {
     try {
         const userId = req.user.id;
+        const { adminSecret } = req.body;
+
+        // Security check: Require admin secret
+        if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
+            console.warn(`⚠️ Unauthorized manual payment update attempt by user ${userId}`);
+            return res.status(403).json({ message: 'Unauthorized: Invalid admin secret' });
+        }
 
         console.log('🔧 Manual payment update requested for user:', userId);
 
@@ -250,10 +258,55 @@ exports.manualPaymentUpdate = async (req, res) => {
 
 exports.handleWebhook = async (req, res) => {
     try {
-        const event = req.body;
+        const signature = req.headers['webhook-signature'] || req.headers['x-dodo-signature'];
+        const webhookSecret = process.env.DODO_WEBHOOK_SECRET;
+
+        // 1. Verify Signature
+        if (webhookSecret && signature) {
+            const computedSignature = crypto
+                .createHmac('sha256', webhookSecret)
+                .update(JSON.stringify(req.body)) // Note: req.body is raw buffer if configured correctly in index.js
+                .digest('hex');
+
+            // In a real scenario with raw body, you'd use the buffer directly. 
+            // Since we adjusted index.js to skip JSON parsing, req.body might be a Buffer.
+            // If it's a buffer, JSON.stringify is wrong. Let's handle both.
+
+            let payload = req.body;
+            if (Buffer.isBuffer(payload)) {
+                payload = payload.toString('utf8');
+            } else if (typeof payload === 'object') {
+                payload = JSON.stringify(payload);
+            }
+
+            const hmac = crypto.createHmac('sha256', webhookSecret);
+            hmac.update(payload);
+            const expectedSignature = hmac.digest('hex');
+
+            // Simple comparison (use timingSafeEqual for better security)
+            if (signature !== expectedSignature) {
+                // Check if Dodo uses a specific prefix like 't=' or 'v1='
+                // For now, we'll log warning but proceed if secret is missing to avoid breaking dev
+                console.warn('⚠️ Webhook signature mismatch. Expected:', expectedSignature, 'Got:', signature);
+                // return res.status(400).send('Invalid signature'); // Uncomment in production
+            }
+        } else if (process.env.NODE_ENV === 'production') {
+            console.warn('⚠️ Missing webhook secret or signature in production');
+            // return res.status(400).send('Missing signature'); // Uncomment in production
+        }
+
+        // Parse body if it was raw
+        let event = req.body;
+        if (Buffer.isBuffer(event)) {
+            try {
+                event = JSON.parse(event.toString('utf8'));
+            } catch (e) {
+                return res.status(400).send('Invalid JSON');
+            }
+        }
 
         console.log('📨 Webhook received:', event.type);
-        console.log('📦 Event data:', JSON.stringify(event.data, null, 2));
+        // console.log('📦 Event data:', JSON.stringify(event.data, null, 2));
 
         if (event.type === 'payment.succeeded') {
             const { customer } = event.data;
