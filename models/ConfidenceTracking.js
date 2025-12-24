@@ -62,10 +62,8 @@ const confidenceTrackingSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Compound index for efficient lookups
 confidenceTrackingSchema.index({ user: 1, course: 1, topic: 1 }, { unique: true });
 
-// Method to add confidence rating
 confidenceTrackingSchema.methods.addRating = function (score, note = '', context = 'general') {
     this.confidenceHistory.push({
         score,
@@ -75,12 +73,11 @@ confidenceTrackingSchema.methods.addRating = function (score, note = '', context
     });
 
     this.currentConfidence = score;
-    this.needsReview = score < 3; // Flag for review if confidence is low
+    this.needsReview = score < 3;
 
     return this.save();
 };
 
-// Method to get confidence trend (improving/declining/stable)
 confidenceTrackingSchema.methods.getTrend = function () {
     if (this.confidenceHistory.length < 2) return 'insufficient_data';
 
@@ -95,7 +92,6 @@ confidenceTrackingSchema.methods.getTrend = function () {
     return 'stable';
 };
 
-// Static method to get low confidence topics for a course
 confidenceTrackingSchema.statics.getLowConfidenceTopics = function (userId, courseId) {
     return this.find({
         user: userId,
@@ -104,7 +100,6 @@ confidenceTrackingSchema.statics.getLowConfidenceTopics = function (userId, cour
     }).sort({ currentConfidence: 1 });
 };
 
-// Static method to get topics needing review
 confidenceTrackingSchema.statics.getTopicsNeedingReview = function (userId, courseId) {
     return this.find({
         user: userId,

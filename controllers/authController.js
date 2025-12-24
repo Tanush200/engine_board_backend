@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
         const payload = { user: { id: user.id } };
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
             if (err) throw err
-            res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email } })
+            res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email, isPaid: user.isPaid } })
         });
     } catch (error) {
         console.error(error.message);
@@ -42,7 +42,7 @@ exports.login = async (req, res) => {
         const payload = { user: { id: user.id } };
 
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-            res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email, githubAccessToken: user.githubAccessToken } })
+            res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email, githubAccessToken: user.githubAccessToken, isPaid: user.isPaid } })
         })
 
     } catch (error) {

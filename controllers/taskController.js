@@ -38,12 +38,26 @@ exports.getTasks = async (req, res) => {
 
 exports.updateTasks = async (req, res) => {
     try {
+        const existingTask = await Task.findOne({ _id: req.params.id, user: req.user.id });
+        if (!existingTask) return res.status(404).json({ message: 'Task Not Found' });
+
+        if (req.body.status === 'Done' && existingTask.status !== 'Done') {
+            req.body.completedAt = new Date();
+        }
+
+        if (req.body.status && req.body.status !== 'Done' && existingTask.status === 'Done') {
+            req.body.completedAt = null;
+        }
+
+        if (req.body.course === '') req.body.course = null;
+        if (req.body.deadline === '') req.body.deadline = null;
+        if (req.body.parentTask === '') req.body.parentTask = null;
+
         const task = await Task.findByIdAndUpdate(
             { _id: req.params.id, user: req.user.id },
             { $set: req.body },
             { new: true }
         );
-        if (!task) return res.status(404).json({ message: 'Task Not Found' });
         res.json(task)
     } catch (error) {
         console.error(error.message)

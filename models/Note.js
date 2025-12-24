@@ -12,7 +12,7 @@ const NoteSchema = new mongoose.Schema({
     },
     color: {
         type: String,
-        default: 'yellow' // yellow, blue, green, pink, purple
+        default: 'yellow'
     },
     position: {
         x: { type: Number, default: 0 },

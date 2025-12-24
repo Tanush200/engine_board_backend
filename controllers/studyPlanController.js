@@ -4,16 +4,13 @@ const Course = require('../models/Course');
 const Resource = require('../models/Resource');
 const perplexityService = require('../services/perplexityService');
 
-/**
- * Generate a new study plan for a course
- * POST /api/study-plans/generate
- */
+
 exports.generateStudyPlan = async (req, res) => {
     try {
         const { courseId, examDate, hoursPerDay, studentLevel } = req.body;
         const userId = req.user.id;
 
-        // Validation
+
         if (!courseId || !examDate) {
             return res.status(400).json({ message: 'Course ID and exam date are required' });
         }
@@ -23,7 +20,7 @@ exports.generateStudyPlan = async (req, res) => {
             return res.status(400).json({ message: 'Exam date must be in the future' });
         }
 
-        // Get course details
+
         const course = await Course.findById(courseId);
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
@@ -33,7 +30,7 @@ exports.generateStudyPlan = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        // Check if active plan already exists
+
         const existingPlan = await StudyPlan.findOne({
             user: userId,
             course: courseId,
@@ -47,7 +44,6 @@ exports.generateStudyPlan = async (req, res) => {
             });
         }
 
-        // Generate topic dependencies using AI
         console.log('Generating topic dependencies...');
         const syllabusTopics = course.syllabus.map(s => s.topic);
         const dependencies = await perplexityService.generateTopicDependencies(
@@ -55,7 +51,6 @@ exports.generateStudyPlan = async (req, res) => {
             syllabusTopics
         );
 
-        // Generate study plan using AI
         console.log('Generating study plan...');
         const aiPlan = await perplexityService.generateStudyPlan(
             course,
@@ -64,12 +59,10 @@ exports.generateStudyPlan = async (req, res) => {
             hoursPerDay || 4
         );
 
-        // Calculate dates for each day
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const daysUntilExam = Math.ceil((exam - today) / (1000 * 60 * 60 * 24));
 
-        // Build schedule with actual dates
         const schedule = aiPlan.dailySchedule.map((dayPlan, index) => {
             const dayDate = new Date(today);
             dayDate.setDate(today.getDate() + index);
@@ -84,7 +77,6 @@ exports.generateStudyPlan = async (req, res) => {
             };
         });
 
-        // Create study plan
         const studyPlan = new StudyPlan({
             user: userId,
             course: courseId,
@@ -117,10 +109,7 @@ exports.generateStudyPlan = async (req, res) => {
     }
 };
 
-/**
- * Get active study plan for a course
- * GET /api/study-plans/:courseId
- */
+
 exports.getStudyPlan = async (req, res) => {
     try {
         const { courseId } = req.params;
@@ -132,10 +121,8 @@ exports.getStudyPlan = async (req, res) => {
             return res.status(404).json({ message: 'No active study plan found for this course' });
         }
 
-        // Get today's tasks
         const todayTasks = studyPlan.getTodayTasks();
 
-        // Calculate progress
         const progress = studyPlan.progress;
 
         res.json({
@@ -151,10 +138,6 @@ exports.getStudyPlan = async (req, res) => {
     }
 };
 
-/**
- * Update topic completion and confidence
- * PUT /api/study-plans/:id/complete-topic
- */
 exports.completeTopicAndRate = async (req, res) => {
     try {
         const { id } = req.params;
@@ -171,7 +154,6 @@ exports.completeTopicAndRate = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        // Find and update the topic
         const daySchedule = studyPlan.schedule.find(d => d.day === day);
         if (!daySchedule) {
             return res.status(404).json({ message: 'Day not found in schedule' });
@@ -188,12 +170,10 @@ exports.completeTopicAndRate = async (req, res) => {
             topic.confidence = confidence;
         }
 
-        // Check if entire day is completed
         daySchedule.completed = daySchedule.topics.every(t => t.completed);
 
         await studyPlan.save();
 
-        // Track confidence in separate collection
         if (confidence) {
             let confidenceTracking = await ConfidenceTracking.findOne({
                 user: userId,
@@ -225,10 +205,7 @@ exports.completeTopicAndRate = async (req, res) => {
     }
 };
 
-/**
- * Trigger adaptive replanning
- * PUT /api/study-plans/:id/replan
- */
+
 exports.adaptiveReplan = async (req, res) => {
     try {
         const { id } = req.params;
@@ -244,7 +221,6 @@ exports.adaptiveReplan = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        // Calculate remaining days
         const today = new Date();
         const exam = new Date(studyPlan.examDate);
         const daysRemaining = Math.ceil((exam - today) / (1000 * 60 * 60 * 24));
@@ -253,7 +229,6 @@ exports.adaptiveReplan = async (req, res) => {
             return res.status(400).json({ message: 'Exam has already passed' });
         }
 
-        // Gather current progress
         const currentProgress = [];
         for (const day of studyPlan.schedule) {
             for (const topic of day.topics) {
@@ -265,7 +240,6 @@ exports.adaptiveReplan = async (req, res) => {
             }
         }
 
-        // Get AI suggestions for replanning
         console.log('Getting adaptive plan suggestions...');
         const adaptivePlan = await perplexityService.suggestAdaptivePlan(
             studyPlan,
@@ -273,7 +247,6 @@ exports.adaptiveReplan = async (req, res) => {
             daysRemaining
         );
 
-        // Update metadata
         studyPlan.metadata.lastReplanned = new Date();
         studyPlan.metadata.replanCount = (studyPlan.metadata.replanCount || 0) + 1;
 
@@ -295,10 +268,7 @@ exports.adaptiveReplan = async (req, res) => {
     }
 };
 
-/**
- * Get spaced repetition review schedule
- * GET /api/study-plans/:id/review-schedule
- */
+
 exports.getReviewSchedule = async (req, res) => {
     try {
         const { id } = req.params;
@@ -314,7 +284,6 @@ exports.getReviewSchedule = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        // Gather completed topics with dates
         const topicsLearned = [];
         for (const day of studyPlan.schedule) {
             for (const topic of day.topics) {
@@ -334,7 +303,6 @@ exports.getReviewSchedule = async (req, res) => {
             });
         }
 
-        // Get AI-generated spaced repetition schedule
         const schedule = await perplexityService.getSpacedRepetitionSchedule(
             topicsLearned,
             studyPlan.examDate
@@ -351,10 +319,7 @@ exports.getReviewSchedule = async (req, res) => {
     }
 };
 
-/**
- * Get confidence tracking for all topics
- * GET /api/study-plans/:courseId/confidence
- */
+
 exports.getConfidenceTracking = async (req, res) => {
     try {
         const { courseId } = req.params;
@@ -376,5 +341,92 @@ exports.getConfidenceTracking = async (req, res) => {
     } catch (error) {
         console.error('Error fetching confidence data:', error);
         res.status(500).json({ message: 'Failed to fetch confidence data', error: error.message });
+    }
+};
+
+
+exports.addCollaborator = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email } = req.body;
+        const userId = req.user.id;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const studyPlan = await StudyPlan.findById(id);
+
+        if (!studyPlan) {
+            return res.status(404).json({ message: 'Study plan not found' });
+        }
+
+        if (studyPlan.user.toString() !== userId) {
+            return res.status(403).json({ message: 'Only the owner can add collaborators' });
+        }
+
+
+        const User = require('../models/User');
+        const collaborator = await User.findOne({ email });
+
+        if (!collaborator) {
+            return res.status(404).json({ message: 'User with this email not found' });
+        }
+
+        if (collaborator._id.toString() === userId) {
+            return res.status(400).json({ message: 'You cannot add yourself as a collaborator' });
+        }
+
+        if (studyPlan.collaborators.includes(collaborator._id)) {
+            return res.status(400).json({ message: 'User is already a collaborator' });
+        }
+
+        studyPlan.collaborators.push(collaborator._id);
+        await studyPlan.save();
+
+        await studyPlan.populate('collaborators', 'name email color');
+
+        const emailService = require('../services/emailService');
+        const inviter = await User.findById(userId);
+        const planLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/exam-prep`;
+
+        await emailService.sendInvitationEmail(
+            collaborator.email,
+            inviter.name,
+            planLink
+        );
+
+        res.json({
+            message: 'Collaborator added successfully',
+            collaborators: studyPlan.collaborators
+        });
+
+    } catch (error) {
+        console.error('Error adding collaborator:', error);
+        res.status(500).json({ message: 'Failed to add collaborator', error: error.message });
+    }
+};
+
+
+exports.getLatestActivePlan = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const plan = await StudyPlan.findOne({
+            $or: [
+                { user: userId },
+                { collaborators: userId }
+            ],
+            status: 'active'
+        })
+            .sort({ lastUpdated: -1 })
+            .populate('course')
+            .populate('collaborators', 'name email');
+
+        if (!plan) return res.status(404).json({ message: 'No active plan found' });
+
+        res.json(plan);
+    } catch (error) {
+        console.error('Error fetching latest plan:', error);
+        res.status(500).json({ message: 'Failed to fetch latest plan', error: error.message });
     }
 };

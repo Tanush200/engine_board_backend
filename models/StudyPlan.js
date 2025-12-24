@@ -6,6 +6,10 @@ const studyPlanSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    collaborators: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     course: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course',
@@ -98,7 +102,7 @@ const studyPlanSchema = new mongoose.Schema({
         },
         dependencies: {
             type: Map,
-            of: mongoose.Schema.Types.Mixed // Stores AI-generated topic dependencies
+            of: mongoose.Schema.Types.Mixed
         },
         studyTips: [{
             type: String
@@ -124,11 +128,9 @@ const studyPlanSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for efficient queries
 studyPlanSchema.index({ user: 1, course: 1, status: 1 });
 studyPlanSchema.index({ examDate: 1 });
 
-// Virtual to calculate overall progress
 studyPlanSchema.virtual('progress').get(function () {
     const totalTopics = this.schedule.reduce((sum, day) => sum + day.topics.length, 0);
     const completedTopics = this.schedule.reduce((sum, day) =>
@@ -137,7 +139,6 @@ studyPlanSchema.virtual('progress').get(function () {
     return totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 });
 
-// Method to get current day's tasks
 studyPlanSchema.methods.getTodayTasks = function () {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -149,7 +150,6 @@ studyPlanSchema.methods.getTodayTasks = function () {
     });
 };
 
-// Method to check if student is behind schedule
 studyPlanSchema.methods.isBehindSchedule = function () {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

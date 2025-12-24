@@ -17,7 +17,7 @@ exports.searchResources = async (req, res) => {
             params: {
                 part: 'snippet',
                 maxResults: 12,
-                q: `${query} tutorial education`, // Append keywords to improve relevance
+                q: `${query} tutorial education`,
                 type: 'video',
                 key: process.env.YOUTUBE_API_KEY,
                 relevanceLanguage: 'en',

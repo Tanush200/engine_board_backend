@@ -8,13 +8,13 @@ const taskSchema = new mongoose.Schema({
     type: { type: String, default: 'Assignment' },
     status: { type: String, default: 'Todo' },
     priority: { type: String, default: 'Medium' },
-    githubRepo: { type: String, default: '' }, // Format: "owner/repo"
+    githubRepo: { type: String, default: '' },
     deadline: { type: Date, default: null },
-    completedAt: { type: Date, default: null }, // Track exact completion time for streaks
-    // AI Study Buddy fields
-    estimatedTime: { type: Number, default: 120 }, // minutes, default 2 hours
-    actualTime: { type: Number }, // minutes, tracked for learning
-    aiGenerated: { type: Boolean, default: false }, // Created by AI breakdown
+    completedAt: { type: Date, default: null },
+
+    estimatedTime: { type: Number, default: 120 },
+    actualTime: { type: Number },
+    aiGenerated: { type: Boolean, default: false },
     parentTask: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', default: null },
     subtasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     createdAt: { type: Date, default: Date.now() }
