@@ -40,6 +40,7 @@ exports.createPayment = async (req, res) => {
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const returnUrl = `${frontendUrl}/payment/success`;
+        const cancelUrl = `${frontendUrl}/payment/failed`;
 
         const session = await client.checkoutSessions.create({
             product_cart: [
