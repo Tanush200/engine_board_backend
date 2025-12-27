@@ -46,7 +46,9 @@ const UserSchema = new mongoose.Schema({
     isPaid: {
         type: Boolean,
         default: false
-    }
+    },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date
 })
 
 module.exports = mongoose.model('User', UserSchema);

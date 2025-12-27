@@ -16,7 +16,7 @@ exports.sendInvitationEmail = async (to, inviterName, planLink) => {
 
     try {
         const { data, error } = await resend.emails.send({
-            from: 'Engine Board <onboarding@resend.dev>', // Use default domain for testing
+            from: process.env.EMAIL_FROM || 'Engine Board <onboarding@resend.dev>', // Use default domain for testing
             to: [to],
             subject: `${inviterName} invited you to collaborate on a Study Plan`,
             html: `
@@ -41,5 +41,44 @@ exports.sendInvitationEmail = async (to, inviterName, planLink) => {
     } catch (error) {
         console.error('Failed to send email:', error);
         // Don't throw, just log so we don't break the flow if email fails
+    }
+};
+
+/**
+ * Send password reset email
+ * @param {string} to - Recipient email
+ * @param {string} resetUrl - Password reset link
+ */
+exports.sendPasswordResetEmail = async (to, resetUrl) => {
+    if (!process.env.RESEND_API_KEY) {
+        console.warn('RESEND_API_KEY is not set. Email sending skipped.');
+        return;
+    }
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'Engine Board <onboarding@resend.dev>',
+            to: [to],
+            subject: 'Password Reset Request',
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Password Reset Request</h2>
+                    <p>You requested a password reset. Please click the button below to reset your password.</p>
+                    <a href="${resetUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset Password</a>
+                    <p style="margin-top: 20px; color: #666; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+                    <p style="color: #666; font-size: 14px;">Link expires in 10 minutes.</p>
+                </div>
+            `,
+        });
+
+        if (error) {
+            console.error('Error sending email:', error);
+            throw error;
+        }
+
+        console.log('Password reset email sent successfully:', data);
+        return data;
+    } catch (error) {
+        console.error('Failed to send password reset email:', error);
     }
 };
